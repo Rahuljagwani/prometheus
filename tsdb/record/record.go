@@ -316,7 +316,7 @@ func (d *Decoder) DecodeLabels(dec *encoding.Decbuf) labels.Labels {
 	return d.builder.Labels()
 }
 
-/// Samples appends samples in rec to the given slice.
+// Samples appends samples in rec to the given slice.
 func (d *Decoder) Samples(rec []byte, samples []RefSample) ([]RefSample, error) {
 	dec := encoding.Decbuf{B: rec}
 	switch typ := dec.Byte(); Type(typ) {
@@ -329,7 +329,7 @@ func (d *Decoder) Samples(rec []byte, samples []RefSample) ([]RefSample, error) 
 	}
 }
 
-func (d *Decoder) samples(dec *encoding.Decbuf, samples []RefSample) ([]RefSample, error) {
+func (*Decoder) samples(dec *encoding.Decbuf, samples []RefSample) ([]RefSample, error) {
 	if dec.Len() == 0 {
 		return samples, nil
 	}
@@ -362,7 +362,7 @@ func (d *Decoder) samples(dec *encoding.Decbuf, samples []RefSample) ([]RefSampl
 	return samples, nil
 }
 
-func (d *Decoder) samplesWithST(dec *encoding.Decbuf, samples []RefSample) ([]RefSample, error) {
+func (*Decoder) samplesWithST(dec *encoding.Decbuf, samples []RefSample) ([]RefSample, error) {
 	if dec.Len() == 0 {
 		return samples, nil
 	}
@@ -761,7 +761,7 @@ func (e *Encoder) Samples(samples []RefSample, b []byte) []byte {
 	return e.samples(samples, b)
 }
 
-func (e *Encoder) samples(samples []RefSample, b []byte) []byte {
+func (*Encoder) samples(samples []RefSample, b []byte) []byte {
 	buf := encoding.Encbuf{B: b}
 	buf.PutByte(byte(Samples))
 
@@ -784,7 +784,7 @@ func (e *Encoder) samples(samples []RefSample, b []byte) []byte {
 	return buf.Get()
 }
 
-func (e *Encoder) samplesWithST(samples []RefSample, b []byte) []byte {
+func (*Encoder) samplesWithST(samples []RefSample, b []byte) []byte {
 	buf := encoding.Encbuf{B: b}
 	buf.PutByte(byte(SamplesWithST))
 
