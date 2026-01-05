@@ -1,4 +1,4 @@
-// Copyright 2017 The Prometheus Authors
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -47,6 +47,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/tsdbutil"
 	"github.com/prometheus/prometheus/tsdb/wlog"
 	"github.com/prometheus/prometheus/util/compression"
+	"github.com/prometheus/prometheus/util/features"
 )
 
 const (
@@ -93,6 +94,7 @@ func DefaultOptions() *Options {
 		CompactionDelayMaxPercent:   DefaultCompactionDelayMaxPercent,
 		CompactionDelay:             time.Duration(0),
 		PostingsDecoderFactory:      DefaultPostingsDecoderFactory,
+		BlockReloadInterval:         1 * time.Minute,
 	}
 }
 
@@ -237,6 +239,12 @@ type Options struct {
 	// BlockCompactionExcludeFunc is a function which returns true for blocks that should NOT be compacted.
 	// It's passed down to the TSDB compactor.
 	BlockCompactionExcludeFunc BlockExcludeFilterFunc
+
+	// BlockReloadInterval is the interval at which blocks are reloaded.
+	BlockReloadInterval time.Duration
+
+	// FeatureRegistry is used to register TSDB features.
+	FeatureRegistry features.Collector
 }
 
 type NewCompactorFunc func(ctx context.Context, r prometheus.Registerer, l *slog.Logger, ranges []int64, pool chunkenc.Pool, opts *Options) (Compactor, error)
@@ -797,6 +805,15 @@ func Open(dir string, l *slog.Logger, r prometheus.Registerer, opts *Options, st
 	var rngs []int64
 	opts, rngs = validateOpts(opts, nil)
 
+	// Register TSDB features if a registry is provided.
+	if opts.FeatureRegistry != nil {
+		opts.FeatureRegistry.Set(features.TSDB, "exemplar_storage", opts.EnableExemplarStorage)
+		opts.FeatureRegistry.Set(features.TSDB, "delayed_compaction", opts.EnableDelayedCompaction)
+		opts.FeatureRegistry.Set(features.TSDB, "isolation", !opts.IsolationDisabled)
+		opts.FeatureRegistry.Set(features.TSDB, "use_uncached_io", opts.UseUncachedIO)
+		opts.FeatureRegistry.Enable(features.TSDB, "native_histograms")
+	}
+
 	return open(dir, l, r, opts, rngs, stats)
 }
 
@@ -830,6 +847,9 @@ func validateOpts(opts *Options, rngs []int64) (*Options, []int64) {
 	}
 	if opts.OutOfOrderTimeWindow < 0 {
 		opts.OutOfOrderTimeWindow = 0
+	}
+	if opts.BlockReloadInterval < 1*time.Second {
+		opts.BlockReloadInterval = 1 * time.Second
 	}
 
 	if len(rngs) == 0 {
@@ -1118,7 +1138,7 @@ func (db *DB) run(ctx context.Context) {
 		}
 
 		select {
-		case <-time.After(1 * time.Minute):
+		case <-time.After(db.opts.BlockReloadInterval):
 			db.cmtx.Lock()
 			if err := db.reloadBlocks(); err != nil {
 				db.logger.Error("reloadBlocks", "err", err)
