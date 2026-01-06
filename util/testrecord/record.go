@@ -24,11 +24,11 @@ import (
 type RefSamplesCase string
 
 const (
-	Realistic1000Samples       RefSamplesCase = "real1000"
+	Realistic1000Samples            RefSamplesCase = "real1000"
 	Realistic1000WithSTDeltaSamples RefSamplesCase = "real1000-dst"
 	Realistic1000WithConstSTSamples RefSamplesCase = "real1000-cst"
-	WorstCase1000       RefSamplesCase = "worst1000"
-	WorstCase1000WithSTSamples       RefSamplesCase = "worst1000-st"
+	WorstCase1000                   RefSamplesCase = "worst1000"
+	WorstCase1000WithSTSamples      RefSamplesCase = "worst1000-st"
 )
 
 func GenTestRefSamplesCase(t testing.TB, c RefSamplesCase) []record.RefSample {

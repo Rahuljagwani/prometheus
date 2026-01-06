@@ -319,7 +319,6 @@ func (d *Decoder) DecodeLabels(dec *encoding.Decbuf) labels.Labels {
 // Samples appends samples in rec to the given slice.
 func (d *Decoder) Samples(rec []byte, samples []RefSample) ([]RefSample, error) {
 	dec := encoding.Decbuf{B: rec}
-
 	switch typ := dec.Byte(); Type(typ) {
 	case Samples:
 		return d.samplesV1(&dec, samples)
@@ -364,6 +363,8 @@ func (d *Decoder) samplesV1(dec *encoding.Decbuf, samples []RefSample) ([]RefSam
 	return samples, nil
 }
 
+// SamplesV2 appends samples in rec to the given slice using the V2 algoritm,
+// which is more efficient. (See Encoder.samplesV2 definition).
 func (d *Decoder) samplesV2(dec *encoding.Decbuf, samples []RefSample) ([]RefSample, error) {
 	if dec.Len() == 0 {
 		return samples, nil
@@ -372,7 +373,6 @@ func (d *Decoder) samplesV2(dec *encoding.Decbuf, samples []RefSample) ([]RefSam
 	if minSize := dec.Len() / (1 + 1 + 8); cap(samples) < minSize {
 		samples = make([]RefSample, 0, minSize)
 	}
-	// fmt.Println("dec start")
 	for len(dec.B) > 0 && dec.Err() == nil {
 		var prev RefSample
 		var ref, t int64
@@ -384,7 +384,6 @@ func (d *Decoder) samplesV2(dec *encoding.Decbuf, samples []RefSample) ([]RefSam
 		} else {
 			prev = samples[len(samples)-1]
 			ref = int64(prev.Ref) + dec.Varint64()
-			// fmt.Println("hmmm", samples[len(samples)-1].Ref, ref)
 			t = prev.T + dec.Varint64()
 		}
 
@@ -401,7 +400,6 @@ func (d *Decoder) samplesV2(dec *encoding.Decbuf, samples []RefSample) ([]RefSam
 		}
 
 		val = dec.Be64()
-		// fmt.Println("dec", chunks.HeadSeriesRef(ref), ST, t, math.Float64frombits(val))
 		samples = append(samples, RefSample{
 			Ref: chunks.HeadSeriesRef(ref),
 			ST:  ST,
@@ -771,13 +769,6 @@ func EncodeLabels(buf *encoding.Encbuf, lbls labels.Labels) {
 	})
 }
 
-const (
-	noST byte = iota
-	lastT
-	lastST
-	deltaST
-)
-
 // Samples appends the encoded samples to b and returns the resulting slice.
 // Depending on the ST existence it either writes Samples or SamplesWithST record.
 func (e *Encoder) Samples(samples []RefSample, b []byte) []byte {
@@ -815,6 +806,18 @@ func (*Encoder) samplesV1(samples []RefSample, b []byte) []byte {
 	return buf.Get()
 }
 
+const (
+	// Start time marker values for indicating trivial cases.
+
+	noST    byte = iota // Sample has no start time
+	lastT               // Start time is the same as the previous sample timestamp
+	lastST              // Start time is the same as the previous sample start time
+	deltaST             // Start time is a new value, delta to the previous sample's start time. (For the first sample, it's a delta from zero).
+)
+
+// SamplesV2 appends the encoded samples to b and returns the resulting slice
+// using a more efficient per-sample delta encoding and allows for Start Time
+// storage.
 func (e *Encoder) samplesV2(samples []RefSample, b []byte) []byte {
 	buf := encoding.Encbuf{B: b}
 	buf.PutByte(byte(SamplesV2))
@@ -823,8 +826,7 @@ func (e *Encoder) samplesV2(samples []RefSample, b []byte) []byte {
 		return buf.Get()
 	}
 
-	// Store base timestamp and base reference number of first sample.
-	// All samples encode their timestamp and ref as delta to those.
+	// Store first ref, time, start time, and value.
 	first := samples[0]
 	buf.PutVarint64(int64(first.Ref))
 	buf.PutVarint64(first.T)
@@ -836,6 +838,9 @@ func (e *Encoder) samplesV2(samples []RefSample, b []byte) []byte {
 	}
 	buf.PutBE64(math.Float64bits(first.V))
 
+	// Subsequent values are delta to the immediate previous values, and in the
+	// case of start time, use the marker byte to indicate what the value should
+	// be if it's one of the trivial cases.
 	for i := 1; i < len(samples); i++ {
 		s := samples[i]
 		prev := samples[i-1]
