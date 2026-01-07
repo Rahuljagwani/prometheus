@@ -90,10 +90,11 @@ var (
 		testrecord.WorstCase1000,
 		testrecord.WorstCase1000WithSTSamples,
 	}
+	UseV2 = true
 )
 
 /*
-	export bench=encode-v1 && go test ./tsdb/record/... \
+	export bench=encode-v2 && go test ./tsdb/record/... \
 		-run '^$' -bench '^BenchmarkEncode_Samples' \
 		-benchtime 5s -count 6 -cpu 2 -timeout 999m \
 		| tee ${bench}.txt
@@ -104,7 +105,7 @@ func BenchmarkEncode_Samples(b *testing.B) {
 			b.Run(fmt.Sprintf("compr=%v/data=%v", compr, data), func(b *testing.B) {
 				var (
 					samples = testrecord.GenTestRefSamplesCase(b, data)
-					enc     = record.Encoder{STPerSample: true}
+					enc     = record.Encoder{STPerSample: UseV2}
 					buf     []byte
 					cBuf    []byte
 				)
@@ -132,7 +133,7 @@ func BenchmarkEncode_Samples(b *testing.B) {
 }
 
 /*
-	export bench=decode-v1 && go test ./tsdb/record/... \
+	export bench=decode-v2 && go test ./tsdb/record/... \
 		-run '^$' -bench '^BenchmarkDecode_Samples' \
 		-benchtime 5s -count 6 -cpu 2 -timeout 999m \
 		| tee ${bench}.txt
@@ -143,7 +144,7 @@ func BenchmarkDecode_Samples(b *testing.B) {
 			b.Run(fmt.Sprintf("compr=%v/data=%v", compr, data), func(b *testing.B) {
 				var (
 					samples    = testrecord.GenTestRefSamplesCase(b, data)
-					enc        = record.Encoder{STPerSample: true}
+					enc        = record.Encoder{STPerSample: UseV2}
 					dec        record.Decoder
 					cDec       = compression.NewDecoder()
 					cBuf       []byte
