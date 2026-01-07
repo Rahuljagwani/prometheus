@@ -39,32 +39,27 @@ func GenTestRefSamplesCase(t testing.TB, c RefSamplesCase) []record.RefSample {
 	case Realistic1000Samples:
 		for i := range ret {
 			ret[i].Ref = chunks.HeadSeriesRef(i)
-			ret[i].T = int64(12423423 + i + 1)
+			ret[i].T = int64(12423423 + (i + 1) * 15)
 			ret[i].V = highVarianceFloat(i)
 		}
 	case Realistic1000WithSTDeltaSamples:
 		for i := range ret {
-			ret[i].Ref = chunks.HeadSeriesRef(i)
-			// For cumulative or gauges, typically in one record from
-			// scrape we would have exactly same ST and T values.
-			ret[i].ST = int64(12423423 + i)
-			ret[i].T = int64(12423423 + i + 1)
+			ret[i].ST = int64(12423423 + i * 15)
+			ret[i].T = int64(12423423 + (i + 1) * 15)
 			ret[i].V = highVarianceFloat(i)
 		}
 	case Realistic1000WithConstSTSamples:
 		for i := range ret {
 			ret[i].Ref = chunks.HeadSeriesRef(i)
-			// For cumulative or gauges, typically in one record from
-			// scrape we would have exactly same ST and T values.
 			ret[i].ST = int64(12423423)
-			ret[i].T = int64(12423423 + i + 1)
+			ret[i].T = int64(12423423 + (i + 1) * 15)
 			ret[i].V = highVarianceFloat(i)
 		}
 	case WorstCase1000:
 		for i := range ret {
 			ret[i].Ref = chunks.HeadSeriesRef(i)
-			ret[i].T = highVarianceInt(i)
-			ret[i].V = highVarianceFloat(i)
+			ret[i].T = highVarianceInt(i) * 15
+			ret[i].V = highVarianceFloat(i * 15)
 		}
 	case WorstCase1000WithSTSamples:
 		for i := range ret {
@@ -72,7 +67,7 @@ func GenTestRefSamplesCase(t testing.TB, c RefSamplesCase) []record.RefSample {
 
 			// Worst case is when the values are significantly different
 			// to each other which breaks delta encoding.
-			ret[i].ST = highVarianceInt(i)
+			ret[i].ST = highVarianceInt(i + 1) / 1024  // Make sure ST is not comparable to T
 			ret[i].T = highVarianceInt(i)
 			ret[i].V = highVarianceFloat(i)
 		}

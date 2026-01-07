@@ -203,7 +203,8 @@ type HeadOptions struct {
 	EnableMetadataWALRecords bool
 
 	// EnableStartTimePerSample determines whether databases (WAL/WBL, tsdb,
-	// agent) should set a Start Time value per sample. Currently totally unused.
+	// agent) should set a Start Time value per sample. Currently not
+	// user-settable and only set in tests.
 	EnableStartTimePerSample bool
 }
 

@@ -69,7 +69,7 @@ func (rt Type) String() string {
 	case Samples:
 		return "samples"
 	case SamplesV2:
-		return "samples-with-st"
+		return "samples-v2"
 	case Tombstones:
 		return "tombstones"
 	case Exemplars:
@@ -165,8 +165,6 @@ type RefSeries struct {
 // TODO(beorn7): Perhaps make this "polymorphic", including histogram and float-histogram pointers? Then get rid of RefHistogramSample.
 type RefSample struct {
 	Ref chunks.HeadSeriesRef
-	// ST is Start Time and exists for forward compatibility. It is currently
-	// unused in calling code.
 	ST, T int64
 	V     float64
 }
