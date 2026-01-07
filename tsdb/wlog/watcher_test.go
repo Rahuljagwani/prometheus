@@ -153,7 +153,7 @@ func TestTailSamples(t *testing.T) {
 			err := os.Mkdir(wdir, 0o777)
 			require.NoError(t, err)
 
-			enc := record.Encoder{}
+			enc := record.Encoder{STPerSample: true}
 			w, err := NewSize(nil, nil, wdir, 128*pageSize, compress)
 			require.NoError(t, err)
 			defer func() {
@@ -306,7 +306,7 @@ func TestReadToEndNoCheckpoint(t *testing.T) {
 
 			var recs [][]byte
 
-			enc := record.Encoder{}
+			enc := record.Encoder{STPerSample: true}
 
 			for i := range seriesCount {
 				series := enc.Series([]record.RefSeries{
@@ -367,7 +367,7 @@ func TestReadToEndWithCheckpoint(t *testing.T) {
 			err := os.Mkdir(wdir, 0o777)
 			require.NoError(t, err)
 
-			enc := record.Encoder{}
+			enc := record.Encoder{STPerSample: true}
 			w, err := NewSize(nil, nil, wdir, segmentSize, compress)
 			require.NoError(t, err)
 			defer func() {
@@ -400,7 +400,7 @@ func TestReadToEndWithCheckpoint(t *testing.T) {
 				}
 			}
 
-			Checkpoint(promslog.NewNopLogger(), w, 0, 1, func(chunks.HeadSeriesRef) bool { return true }, 0)
+			Checkpoint(promslog.NewNopLogger(), w, 0, 1, func(chunks.HeadSeriesRef) bool { return true }, 0, true)
 			w.Truncate(1)
 
 			// Write more records after checkpointing.
@@ -460,7 +460,7 @@ func TestReadCheckpoint(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, f.Close())
 
-			enc := record.Encoder{}
+			enc := record.Encoder{STPerSample: true}
 			w, err := NewSize(nil, nil, wdir, 128*pageSize, compress)
 			require.NoError(t, err)
 			t.Cleanup(func() {
@@ -492,7 +492,7 @@ func TestReadCheckpoint(t *testing.T) {
 			}
 			_, err = w.NextSegmentSync()
 			require.NoError(t, err)
-			_, err = Checkpoint(promslog.NewNopLogger(), w, 30, 31, func(chunks.HeadSeriesRef) bool { return true }, 0)
+			_, err = Checkpoint(promslog.NewNopLogger(), w, 30, 31, func(chunks.HeadSeriesRef) bool { return true }, 0, true)
 			require.NoError(t, err)
 			require.NoError(t, w.Truncate(32))
 
@@ -529,7 +529,7 @@ func TestReadCheckpointMultipleSegments(t *testing.T) {
 			err := os.Mkdir(wdir, 0o777)
 			require.NoError(t, err)
 
-			enc := record.Encoder{}
+			enc := record.Encoder{STPerSample: true}
 			w, err := NewSize(nil, nil, wdir, pageSize, compress)
 			require.NoError(t, err)
 
@@ -607,7 +607,7 @@ func TestCheckpointSeriesReset(t *testing.T) {
 			err := os.Mkdir(wdir, 0o777)
 			require.NoError(t, err)
 
-			enc := record.Encoder{}
+			enc := record.Encoder{STPerSample: true}
 			w, err := NewSize(nil, nil, wdir, segmentSize, tc.compress)
 			require.NoError(t, err)
 			defer func() {
@@ -655,7 +655,7 @@ func TestCheckpointSeriesReset(t *testing.T) {
 				return wt.checkNumSeries() == seriesCount
 			}, 10*time.Second, 1*time.Second)
 
-			_, err = Checkpoint(promslog.NewNopLogger(), w, 2, 4, func(chunks.HeadSeriesRef) bool { return true }, 0)
+			_, err = Checkpoint(promslog.NewNopLogger(), w, 2, 4, func(chunks.HeadSeriesRef) bool { return true }, 0, true)
 			require.NoError(t, err)
 
 			err = w.Truncate(5)
@@ -692,7 +692,7 @@ func TestRun_StartupTime(t *testing.T) {
 			err := os.Mkdir(wdir, 0o777)
 			require.NoError(t, err)
 
-			enc := record.Encoder{}
+			enc := record.Encoder{STPerSample: true}
 			w, err := NewSize(nil, nil, wdir, pageSize, compress)
 			require.NoError(t, err)
 
@@ -737,7 +737,7 @@ func TestRun_StartupTime(t *testing.T) {
 }
 
 func generateWALRecords(w *WL, segment, seriesCount, samplesCount int) error {
-	enc := record.Encoder{}
+	enc := record.Encoder{STPerSample: true}
 	for j := range seriesCount {
 		ref := j + (segment * 100)
 		series := enc.Series([]record.RefSeries{

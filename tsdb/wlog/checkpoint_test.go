@@ -175,7 +175,7 @@ func TestCheckpoint(t *testing.T) {
 		t.Run(fmt.Sprintf("compress=%s", compress), func(t *testing.T) {
 			dir := t.TempDir()
 
-			var enc record.Encoder
+			enc := record.Encoder{STPerSample: true}
 			// Create a dummy segment to bump the initial number.
 			seg, err := CreateSegment(dir, 100)
 			require.NoError(t, err)
@@ -294,7 +294,7 @@ func TestCheckpoint(t *testing.T) {
 
 			stats, err := Checkpoint(promslog.NewNopLogger(), w, 100, 106, func(x chunks.HeadSeriesRef) bool {
 				return x%2 == 0
-			}, last/2)
+			}, last/2, true)
 			require.NoError(t, err)
 			require.NoError(t, w.Truncate(107))
 			require.NoError(t, DeleteCheckpoints(w.Dir(), 106))
@@ -388,7 +388,7 @@ func TestCheckpointNoTmpFolderAfterError(t *testing.T) {
 	dir := t.TempDir()
 	w, err := NewSize(nil, nil, dir, 64*1024, compression.None)
 	require.NoError(t, err)
-	var enc record.Encoder
+	enc := record.Encoder{STPerSample: true}
 	require.NoError(t, w.Log(enc.Series([]record.RefSeries{
 		{Ref: 0, Labels: labels.FromStrings("a", "b", "c", "2")},
 	}, nil)))
@@ -402,7 +402,7 @@ func TestCheckpointNoTmpFolderAfterError(t *testing.T) {
 	require.NoError(t, f.Close())
 
 	// Run the checkpoint and since the wlog contains corrupt data this should return an error.
-	_, err = Checkpoint(promslog.NewNopLogger(), w, 0, 1, nil, 0)
+	_, err = Checkpoint(promslog.NewNopLogger(), w, 0, 1, nil, 0, true)
 	require.Error(t, err)
 
 	// Walk the wlog dir to make sure there are no tmp folder left behind after the error.

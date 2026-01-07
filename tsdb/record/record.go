@@ -165,6 +165,8 @@ type RefSeries struct {
 // TODO(beorn7): Perhaps make this "polymorphic", including histogram and float-histogram pointers? Then get rid of RefHistogramSample.
 type RefSample struct {
 	Ref   chunks.HeadSeriesRef
+	// ST is Start Time and exists for forward compatibility. It is currently
+	// unused in calling code.
 	ST, T int64
 	V     float64
 }
@@ -724,7 +726,11 @@ func DecodeFloatHistogram(buf *encoding.Decbuf, fh *histogram.FloatHistogram) {
 
 // Encoder encodes series, sample, and tombstones records.
 // The zero value is ready to use.
-type Encoder struct{}
+type Encoder struct {
+	// STPerSample enables the SamplesV2 encoding, which is more efficient
+	// than V1 and supports start time per sample.
+	STPerSample bool
+}
 
 // Series appends the encoded series to b and returns the resulting slice.
 func (*Encoder) Series(series []RefSeries, b []byte) []byte {
@@ -772,12 +778,8 @@ func EncodeLabels(buf *encoding.Encbuf, lbls labels.Labels) {
 // Samples appends the encoded samples to b and returns the resulting slice.
 // Depending on the ST existence it either writes Samples or SamplesWithST record.
 func (e *Encoder) Samples(samples []RefSample, b []byte) []byte {
-	// XXX: We could also just always use V2, the overhead is not that big over V1
-	// even when no ST.
-	for _, s := range samples {
-		if s.ST != 0 {
-			return e.samplesV2(samples, b)
-		}
+	if  e.STPerSample {
+		return e.samplesV2(samples, b)
 	}
 	return e.samplesV1(samples, b)
 }
