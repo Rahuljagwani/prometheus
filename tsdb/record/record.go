@@ -373,6 +373,7 @@ func (*Decoder) samplesV2(dec *encoding.Decbuf, samples []RefSample) ([]RefSampl
 	if minSize := dec.Len() / (1 + 1 + 8); cap(samples) < minSize {
 		samples = make([]RefSample, 0, minSize)
 	}
+	var firstT int64
 	for len(dec.B) > 0 && dec.Err() == nil {
 		var prev RefSample
 		var ref, t int64
@@ -380,23 +381,22 @@ func (*Decoder) samplesV2(dec *encoding.Decbuf, samples []RefSample) ([]RefSampl
 
 		if len(samples) == 0 {
 			ref = dec.Varint64()
-			t = dec.Varint64()
+			firstT = dec.Varint64()
+			t = firstT
 		} else {
 			prev = samples[len(samples)-1]
 			ref = int64(prev.Ref) + dec.Varint64()
-			t = prev.T + dec.Varint64()
+			t = firstT + dec.Varint64()
 		}
 
 		stMarker := dec.Byte()
 		var ST int64
 		switch stMarker {
 		case noST:
-		case lastT:
-			ST = prev.T
-		case lastST:
+		case sameST:
 			ST = prev.ST
 		default:
-			ST = prev.ST + dec.Varint64()
+			ST = firstT + dec.Varint64()
 		}
 
 		val = dec.Be64()
@@ -809,10 +809,9 @@ func (*Encoder) samplesV1(samples []RefSample, b []byte) []byte {
 const (
 	// Start time marker values for indicating trivial cases.
 
-	noST    byte = iota // Sample has no start time
-	lastT               // Start time is the same as the previous sample timestamp
-	lastST              // Start time is the same as the previous sample start time
-	deltaST             // Start time is a new value, delta to the previous sample's start time. (For the first sample, it's a delta from zero).
+	noST       byte = iota // Sample has no start time
+	sameST                 // Sample time exists and is the same as the start time of the previous series.
+	explicitST             // Start time is an explicit value, delta to first timestamp (or last ST??)
 )
 
 // SamplesV2 appends the encoded samples to b and returns the resulting slice
@@ -833,8 +832,8 @@ func (*Encoder) samplesV2(samples []RefSample, b []byte) []byte {
 	if first.ST == 0 {
 		buf.PutByte(0)
 	} else {
-		buf.PutByte(deltaST)
-		buf.PutVarint64(first.ST)
+		buf.PutByte(explicitST)
+		buf.PutVarint64(first.ST - first.T)
 	}
 	buf.PutBE64(math.Float64bits(first.V))
 
@@ -846,18 +845,16 @@ func (*Encoder) samplesV2(samples []RefSample, b []byte) []byte {
 		prev := samples[i-1]
 
 		buf.PutVarint64(int64(s.Ref) - int64(prev.Ref))
-		buf.PutVarint64(s.T - prev.T)
+		buf.PutVarint64(s.T - first.T)
 
 		switch s.ST {
 		case 0:
 			buf.PutByte(0)
-		case prev.T:
-			buf.PutByte(lastT)
 		case prev.ST:
-			buf.PutByte(lastST)
+			buf.PutByte(sameST)
 		default:
-			buf.PutByte(deltaST)
-			buf.PutVarint64(s.ST - prev.ST)
+			buf.PutByte(explicitST)
+			buf.PutVarint64(s.ST - first.T)
 		}
 		buf.PutBE64(math.Float64bits(s.V))
 	}

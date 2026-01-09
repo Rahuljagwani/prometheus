@@ -132,6 +132,30 @@ func BenchmarkEncode_Samples(b *testing.B) {
 	}
 }
 
+// func TestEncode(t *testing.T) {
+// 	var (
+// 		samples = testrecord.GenTestRefSamplesCase(t,testrecord.Realistic1000WithSTDeltaSamples)
+// 		enc     = record.Encoder{STPerSample: UseV2}
+// 		buf     []byte
+// 		cBuf    []byte
+// 	)
+
+// 	cEnc, err := compression.NewEncoder()
+// 	require.NoError(t, err)
+
+// 	// Warm up.
+// 	buf = enc.Samples(samples, buf[:0])
+// 	cBuf, _, err = cEnc.Encode(compression.None, buf, cBuf[:0])
+// 	require.NoError(t, err)
+
+// 	buf = enc.Samples(samples, buf[:0])
+// 	// b.ReportMetric(float64(len(buf)), "B/rec")
+
+// 	cBuf, _, _ = cEnc.Encode(compression.None, buf, cBuf[:0])
+// 	// b.ReportMetric(float64(len(cBuf)), "B/compressed-rec")
+// 	require.True(t, false)
+// }
+
 /*
 	export bench=decode-v2 && go test ./tsdb/record/... \
 		-run '^$' -bench '^BenchmarkDecode_Samples' \

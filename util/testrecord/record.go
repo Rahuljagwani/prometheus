@@ -36,30 +36,34 @@ func GenTestRefSamplesCase(t testing.TB, c RefSamplesCase) []record.RefSample {
 
 	ret := make([]record.RefSample, 1e3)
 	switch c {
+	// Samples are across series, so likely all have the same timestamp.
 	case Realistic1000Samples:
 		for i := range ret {
 			ret[i].Ref = chunks.HeadSeriesRef(i)
-			ret[i].T = int64(12423423 + (i+1)*15)
+			ret[i].T = int64(12423423)
 			ret[i].V = highVarianceFloat(i)
 		}
+	// Likely the start times will all be the same with deltas.
 	case Realistic1000WithSTDeltaSamples:
-		for i := range ret {
-			ret[i].ST = int64(12423423 + i*15)
-			ret[i].T = int64(12423423 + (i+1)*15)
-			ret[i].V = highVarianceFloat(i)
-		}
-	case Realistic1000WithConstSTSamples:
 		for i := range ret {
 			ret[i].Ref = chunks.HeadSeriesRef(i)
 			ret[i].ST = int64(12423423)
-			ret[i].T = int64(12423423 + (i+1)*15)
+			ret[i].T = int64(12423423 + 15)
+			ret[i].V = highVarianceFloat(i)
+		}
+	// Maybe series have different start times though
+	case Realistic1000WithConstSTSamples:
+		for i := range ret {
+			ret[i].Ref = chunks.HeadSeriesRef(i)
+			ret[i].ST = int64(12423423 + (i / 100))
+			ret[i].T = int64(12423423 + 2000)
 			ret[i].V = highVarianceFloat(i)
 		}
 	case WorstCase1000:
 		for i := range ret {
 			ret[i].Ref = chunks.HeadSeriesRef(i)
-			ret[i].T = highVarianceInt(i) * 15
-			ret[i].V = highVarianceFloat(i * 15)
+			ret[i].T = highVarianceInt(i)
+			ret[i].V = highVarianceFloat(i)
 		}
 	case WorstCase1000WithSTSamples:
 		for i := range ret {
