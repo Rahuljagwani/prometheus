@@ -396,7 +396,8 @@ func (*Decoder) samplesV2(dec *encoding.Decbuf, samples []RefSample) ([]RefSampl
 		case sameST:
 			ST = prev.ST
 		default:
-			ST = firstT + dec.Varint64()
+			v := dec.Varint64()
+			ST = firstT - v
 		}
 
 		val = dec.Be64()
@@ -833,7 +834,7 @@ func (*Encoder) samplesV2(samples []RefSample, b []byte) []byte {
 		buf.PutByte(0)
 	} else {
 		buf.PutByte(explicitST)
-		buf.PutVarint64(first.ST - first.T)
+		buf.PutVarint64(first.T - first.ST)
 	}
 	buf.PutBE64(math.Float64bits(first.V))
 
@@ -854,7 +855,7 @@ func (*Encoder) samplesV2(samples []RefSample, b []byte) []byte {
 			buf.PutByte(sameST)
 		default:
 			buf.PutByte(explicitST)
-			buf.PutVarint64(s.ST - first.T)
+			buf.PutVarint64(first.T - s.ST)
 		}
 		buf.PutBE64(math.Float64bits(s.V))
 	}

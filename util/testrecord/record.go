@@ -24,11 +24,11 @@ import (
 type RefSamplesCase string
 
 const (
-	Realistic1000Samples            RefSamplesCase = "real1000"
-	Realistic1000WithSTDeltaSamples RefSamplesCase = "real1000-dst"
-	Realistic1000WithConstSTSamples RefSamplesCase = "real1000-cst"
-	WorstCase1000                   RefSamplesCase = "worst1000"
-	WorstCase1000WithSTSamples      RefSamplesCase = "worst1000-st"
+	Realistic1000Samples               RefSamplesCase = "real1000"
+	Realistic1000WithVariableSTSamples RefSamplesCase = "real1000-vst"
+	Realistic1000WithConstSTSamples    RefSamplesCase = "real1000-cst"
+	WorstCase1000                      RefSamplesCase = "worst1000"
+	WorstCase1000WithSTSamples         RefSamplesCase = "worst1000-st"
 )
 
 func GenTestRefSamplesCase(t testing.TB, c RefSamplesCase) []record.RefSample {
@@ -44,7 +44,7 @@ func GenTestRefSamplesCase(t testing.TB, c RefSamplesCase) []record.RefSample {
 			ret[i].V = highVarianceFloat(i)
 		}
 	// Likely the start times will all be the same with deltas.
-	case Realistic1000WithSTDeltaSamples:
+	case Realistic1000WithConstSTSamples:
 		for i := range ret {
 			ret[i].Ref = chunks.HeadSeriesRef(i)
 			ret[i].ST = int64(12423423)
@@ -52,11 +52,11 @@ func GenTestRefSamplesCase(t testing.TB, c RefSamplesCase) []record.RefSample {
 			ret[i].V = highVarianceFloat(i)
 		}
 	// Maybe series have different start times though
-	case Realistic1000WithConstSTSamples:
+	case Realistic1000WithVariableSTSamples:
 		for i := range ret {
 			ret[i].Ref = chunks.HeadSeriesRef(i)
-			ret[i].ST = int64(12423423 + (i / 100))
-			ret[i].T = int64(12423423 + 2000)
+			ret[i].ST = int64((12423423 / 9) * (i % 10))
+			ret[i].T = int64(12423423)
 			ret[i].V = highVarianceFloat(i)
 		}
 	case WorstCase1000:
