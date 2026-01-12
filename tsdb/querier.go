@@ -788,6 +788,10 @@ func (p *populateWithDelSeriesIterator) AtT() int64 {
 	return p.curr.AtT()
 }
 
+func (p *populateWithDelSeriesIterator) AtST() int64 {
+	return p.curr.AtST()
+}
+
 func (p *populateWithDelSeriesIterator) Err() error {
 	if err := p.populateWithDelGenericSeriesIterator.Err(); err != nil {
 		return err
@@ -1200,6 +1204,10 @@ func (it *DeletedIterator) AtFloatHistogram(fh *histogram.FloatHistogram) (int64
 
 func (it *DeletedIterator) AtT() int64 {
 	return it.Iter.AtT()
+}
+
+func (it *DeletedIterator) AtST() int64 {
+	return it.Iter.AtST()
 }
 
 func (it *DeletedIterator) Seek(t int64) chunkenc.ValueType {

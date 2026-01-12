@@ -790,6 +790,10 @@ func (it *mockSampleIterator) AtT() int64 {
 	return it.s[it.idx].T()
 }
 
+func (it *mockSampleIterator) AtST() int64 {
+	return it.s[it.idx].ST()
+}
+
 func (it *mockSampleIterator) Next() chunkenc.ValueType {
 	if it.idx < len(it.s)-1 {
 		it.idx++

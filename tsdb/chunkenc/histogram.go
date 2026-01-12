@@ -143,6 +143,14 @@ func (c *HistogramChunk) Appender() (Appender, error) {
 	return a, nil
 }
 
+func (c *HistogramChunk) AppenderV2() (AppenderV2, error) {
+	a, err := c.Appender()
+	if err != nil {
+		return nil, err
+	}
+	return &CompatAppenderV2{Appender: a}, nil
+}
+
 func countSpans(spans []histogram.Span) int {
 	var cnt int
 	for _, s := range spans {
@@ -1073,6 +1081,10 @@ func (it *histogramIterator) AtFloatHistogram(fh *histogram.FloatHistogram) (int
 
 func (it *histogramIterator) AtT() int64 {
 	return it.t
+}
+
+func (*histogramIterator) AtST() int64 {
+	return 0
 }
 
 func (it *histogramIterator) Err() error {

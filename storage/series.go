@@ -138,6 +138,11 @@ func (it *listSeriesIterator) AtT() int64 {
 	return s.T()
 }
 
+func (it *listSeriesIterator) AtST() int64 {
+	s := it.samples.Get(it.idx)
+	return s.ST()
+}
+
 func (it *listSeriesIterator) Next() chunkenc.ValueType {
 	it.idx++
 	if it.idx >= it.samples.Len() {

@@ -125,6 +125,14 @@ func (c *XORChunk) Appender() (Appender, error) {
 	return a, nil
 }
 
+func (c *XORChunk) AppenderV2() (AppenderV2, error) {
+	a, err := c.Appender()
+	if err != nil {
+		return nil, err
+	}
+	return &CompatAppenderV2{Appender: a}, nil
+}
+
 func (c *XORChunk) iterator(it Iterator) *xorIterator {
 	if xorIter, ok := it.(*xorIterator); ok {
 		xorIter.Reset(c.b.bytes())
@@ -275,6 +283,10 @@ func (*xorIterator) AtFloatHistogram(*histogram.FloatHistogram) (int64, *histogr
 
 func (it *xorIterator) AtT() int64 {
 	return it.t
+}
+
+func (*xorIterator) AtST() int64 {
+	return 0
 }
 
 func (it *xorIterator) Err() error {

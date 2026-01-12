@@ -139,6 +139,14 @@ func (c *FloatHistogramChunk) Appender() (Appender, error) {
 	return a, nil
 }
 
+func (c *FloatHistogramChunk) AppenderV2() (AppenderV2, error) {
+	a, err := c.Appender()
+	if err != nil {
+		return nil, err
+	}
+	return &CompatAppenderV2{Appender: a}, nil
+}
+
 func (c *FloatHistogramChunk) iterator(it Iterator) *floatHistogramIterator {
 	// This comment is copied from XORChunk.iterator:
 	//   Should iterators guarantee to act on a copy of the data so it doesn't lock append?
@@ -936,6 +944,10 @@ func (it *floatHistogramIterator) AtFloatHistogram(fh *histogram.FloatHistogram)
 
 func (it *floatHistogramIterator) AtT() int64 {
 	return it.t
+}
+
+func (*floatHistogramIterator) AtST() int64 {
+	return 0
 }
 
 func (it *floatHistogramIterator) Err() error {
