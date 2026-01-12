@@ -125,14 +125,6 @@ func (c *XORChunk) Appender() (Appender, error) {
 	return a, nil
 }
 
-func (c *XORChunk) AppenderV2() (AppenderV2, error) {
-	a, err := c.Appender()
-	if err != nil {
-		return nil, err
-	}
-	return &CompatAppenderV2{Appender: a}, nil
-}
-
 func (c *XORChunk) iterator(it Iterator) *xorIterator {
 	if xorIter, ok := it.(*xorIterator); ok {
 		xorIter.Reset(c.b.bytes())
@@ -166,7 +158,7 @@ type xorAppender struct {
 	trailing uint8
 }
 
-func (a *xorAppender) Append(t int64, v float64) {
+func (a *xorAppender) Append(_, t int64, v float64) {
 	var tDelta uint64
 	num := binary.BigEndian.Uint16(a.b.bytes())
 	switch num {
@@ -233,11 +225,11 @@ func (a *xorAppender) writeVDelta(v float64) {
 	xorWrite(a.b, v, a.v, &a.leading, &a.trailing)
 }
 
-func (*xorAppender) AppendHistogram(*HistogramAppender, int64, *histogram.Histogram, bool) (Chunk, bool, Appender, error) {
+func (*xorAppender) AppendHistogram(*HistogramAppender, int64, int64, *histogram.Histogram, bool) (Chunk, bool, Appender, error) {
 	panic("appended a histogram sample to a float chunk")
 }
 
-func (*xorAppender) AppendFloatHistogram(*FloatHistogramAppender, int64, *histogram.FloatHistogram, bool) (Chunk, bool, Appender, error) {
+func (*xorAppender) AppendFloatHistogram(*FloatHistogramAppender, int64, int64, *histogram.FloatHistogram, bool) (Chunk, bool, Appender, error) {
 	panic("appended a float histogram sample to a float chunk")
 }
 

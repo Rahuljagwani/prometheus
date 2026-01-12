@@ -881,7 +881,7 @@ func (p *populateWithDelChunkSeriesIterator) populateCurrForSingleChunk() bool {
 	var (
 		newChunk chunkenc.Chunk
 		app      chunkenc.Appender
-		t        int64
+		st, t    int64
 		err      error
 	)
 	switch valueType {
@@ -897,7 +897,8 @@ func (p *populateWithDelChunkSeriesIterator) populateCurrForSingleChunk() bool {
 			}
 			var h *histogram.Histogram
 			t, h = p.currDelIter.AtHistogram(nil)
-			_, _, app, err = app.AppendHistogram(nil, t, h, true)
+			st = p.currDelIter.AtST()
+			_, _, app, err = app.AppendHistogram(nil, st, t, h, true)
 			if err != nil {
 				break
 			}
@@ -914,7 +915,8 @@ func (p *populateWithDelChunkSeriesIterator) populateCurrForSingleChunk() bool {
 			}
 			var v float64
 			t, v = p.currDelIter.At()
-			app.Append(t, v)
+			st = p.currDelIter.AtST()
+			app.Append(st, t, v)
 		}
 	case chunkenc.ValFloatHistogram:
 		newChunk = chunkenc.NewFloatHistogramChunk()
@@ -928,7 +930,8 @@ func (p *populateWithDelChunkSeriesIterator) populateCurrForSingleChunk() bool {
 			}
 			var h *histogram.FloatHistogram
 			t, h = p.currDelIter.AtFloatHistogram(nil)
-			_, _, app, err = app.AppendFloatHistogram(nil, t, h, true)
+			st = p.currDelIter.AtST()
+			_, _, app, err = app.AppendFloatHistogram(nil, st, t, h, true)
 			if err != nil {
 				break
 			}
@@ -969,7 +972,7 @@ func (p *populateWithDelChunkSeriesIterator) populateChunksFromIterable() bool {
 
 	var (
 		// t is the timestamp for the current sample.
-		t     int64
+		st, t int64
 		cmint int64
 		cmaxt int64
 
@@ -1008,23 +1011,26 @@ func (p *populateWithDelChunkSeriesIterator) populateChunksFromIterable() bool {
 			{
 				var v float64
 				t, v = p.currDelIter.At()
-				app.Append(t, v)
+				st = p.currDelIter.AtST()
+				app.Append(st, t, v)
 			}
 		case chunkenc.ValHistogram:
 			{
 				var v *histogram.Histogram
 				t, v = p.currDelIter.AtHistogram(nil)
+				st = p.currDelIter.AtST()
 				// No need to set prevApp as AppendHistogram will set the
 				// counter reset header for the appender that's returned.
-				newChunk, recoded, app, err = app.AppendHistogram(nil, t, v, false)
+				newChunk, recoded, app, err = app.AppendHistogram(nil, st, t, v, false)
 			}
 		case chunkenc.ValFloatHistogram:
 			{
 				var v *histogram.FloatHistogram
 				t, v = p.currDelIter.AtFloatHistogram(nil)
+				st = p.currDelIter.AtST()
 				// No need to set prevApp as AppendHistogram will set the
 				// counter reset header for the appender that's returned.
-				newChunk, recoded, app, err = app.AppendFloatHistogram(nil, t, v, false)
+				newChunk, recoded, app, err = app.AppendFloatHistogram(nil, st, t, v, false)
 			}
 		}
 
